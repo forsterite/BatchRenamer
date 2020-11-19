@@ -12,6 +12,7 @@ strconstant ksPackageName=BatchRenamer
 strconstant ksPrefsFileName=acwBatchRenamer.bin
 constant kPrefsVersion=100
 
+// to do
 // create help
 // an option to hide the packages folder in the wave selector widget would be nice!
 
