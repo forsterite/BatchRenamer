@@ -2,7 +2,7 @@
 #pragma rtGlobals=3
 #pragma DefaultTab={3,20,4}
 #pragma ModuleName=BatchRenamer
-#pragma version=1.1
+#pragma version=1.2
 
 #include <WaveSelectorWidget>
 
@@ -31,19 +31,19 @@ static Structure PackagePrefs
 EndStructure
 
 // set prefs structure to default values
-static function PrefsSetDefaults(STRUCT PackagePrefs &prefs)		
+static function PrefsSetDefaults(STRUCT PackagePrefs &prefs)
 	prefs.version=kPrefsVersion
 	prefs.win.left=20
 	prefs.win.top=20
 	prefs.win.right=20+470
-	prefs.win.bottom=20+340	
+	prefs.win.bottom=20+340
 	int i
 	for(i=0;i<(128-12);i+=1)
 		prefs.reserved[i]=0
 	endfor
 end
 
-static function LoadPrefs(STRUCT PackagePrefs &prefs)	
+static function LoadPrefs(STRUCT PackagePrefs &prefs)
 	LoadPackagePreferences ksPackageName, ksPrefsFileName, 0, prefs
 	if (V_flag!=0 || V_bytesRead==0 || prefs.version!=kPrefsVersion)
 		PrefsSetDefaults(prefs)
@@ -91,7 +91,7 @@ function BatchRename()
 	Make/O/B/U/N=(0,4,3) dfr:sw /wave=sw
 	SetDimLabel 2, 1, backColors, sw
 	SetDimLabel 2, 2, foreColors, sw
-	make/n=(2,3)/O/W/U dfr:wcolor /wave=wcolor
+	Make/n=(2,3)/O/W/U dfr:wcolor /wave=wcolor
 	wcolor[1][]={{65535},{0},{0}} // red
 	wcolor[2][]={{0},{0},{65535}} // blue
 	wcolor[3][]={{65535},{60000},{60000}} // pink
@@ -105,7 +105,7 @@ function BatchRename()
 	NewNotebook /F=1 /N=nbCmd /HOST=BatchRenamerPanel /W=(10,10,190,35)/FG=($"",cmdT,cmdR,cmdB) /OPTS=11
 	Notebook BatchRenamerPanel#nbCmd fSize=12, showRuler=0
 	Notebook BatchRenamerPanel#nbCmd spacing={4,0,5},changeableByCommandOnly=1
-	Notebook BatchRenamerPanel#nbCmd margins={0,0,440}, backRGB=(60066,60076,60063)
+	Notebook BatchRenamerPanel#nbCmd margins={0,0,435}, backRGB=(60066,60076,60063)
 	SetWindow BatchRenamerPanel#nbCmd, activeChildFrame=0
 	SetActiveSubwindow BatchRenamerPanel
 
@@ -236,7 +236,7 @@ end
 
 
 static function ValidCell(STRUCT WMListboxAction &s)
-	return s.row>-1 && s.col>-1 && s.row<dimsize(s.listWave, 0) && s.col<dimsize(s.listWave, 1)
+	return s.row>-1 && s.col>-1 && s.row<DimSize(s.listWave, 0) && s.col<DimSize(s.listWave, 1)
 end
 
 // this function enables the deleterow 'button'
@@ -278,7 +278,7 @@ static function ListboxFunc(STRUCT WMListboxAction &s)
 	
 	if(s.eventCode==2)
 		ListBox $s.ctrlName, win=$s.win, userdata(mousedownrow)=""
-	endif	
+	endif
 end
 	
 static function CheckFunc(STRUCT WMCheckboxAction &s)
@@ -336,13 +336,13 @@ static function ButtonFunc(STRUCT WMButtonAction &s)
 end
 
 static function copyCmd([string destination])
-	destination=selectstring(paramisDefault(destination), destination, "CommandLine")
+	destination=SelectString(ParamIsDefault(destination), destination, "CommandLine")
 	Notebook BatchRenamerPanel#nbCmd selection={startOfFile,endofFile}
 	GetSelection Notebook, BatchRenamerPanel#nbCmd, 2
 	Notebook BatchRenamerPanel#nbCmd selection={endofFile,endofFile}
 	if(cmpstr(destination,"CommandLine") == 0)
 		if(strlen(s_selection)>2500)
-			doalert 0, "command too long for commandline"
+			DoAlert 0, "command too long for commandline"
 			return 0
 		endif
 		ToCommandLine s_selection
@@ -393,7 +393,7 @@ static function selectItems()
 			renamelistwave[DimSize(renamelistwave,0)][]={{ParseFilePath(0, wNew[i], ":", 1, 0)},{strType},{""},{"\JC🅧"}}
 		endif
 	endfor
-	redimension /N=(dimsize(wPaths, 0), -1, -1) sw
+	Redimension /N=(DimSize(wPaths, 0), -1, -1) sw
 	setNewNames()
 end
 
@@ -516,7 +516,7 @@ static function generateCmd()
 		if(error&4)
 			cmd += "** illegal name **\r"
 		endif
-		cmd=removeending(cmd, "\r")
+		cmd=RemoveEnding(cmd, "\r")
 	endif
 	
 	Notebook BatchRenamerPanel#nbCmd selection={startOfFile,endofFile}
@@ -558,8 +558,13 @@ static function FilterHook(STRUCT WMWinHookStruct &s)
 	
 	if(s.eventcode==2) // window is being killed
 		KillDataFolder /Z root:Packages:BatchRenamer
-		SaveWindowPosition(s.winName)
+		SaveWindowPosition(s.WinName)
 		return 1
+	endif
+	
+	if(s.eventcode==6) // resize
+		GetWindow $s.WinName wsize
+		Notebook BatchRenamerPanel#nbCmd margins={0,0,435+(V_right-V_left)-470}
 	endif
 		
 	GetWindow /Z BatchRenamerPanel#nbFilter active
