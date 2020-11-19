@@ -2,7 +2,7 @@
 #pragma rtGlobals=3
 #pragma DefaultTab={3,20,4}
 #pragma ModuleName=BatchRenamer
-#pragma version=1.1
+#pragma version=1.2Í
 
 #include <WaveSelectorWidget>
 
@@ -105,7 +105,7 @@ function BatchRename()
 	NewNotebook /F=1 /N=nbCmd /HOST=BatchRenamerPanel /W=(10,10,190,35)/FG=($"",cmdT,cmdR,cmdB) /OPTS=11
 	Notebook BatchRenamerPanel#nbCmd fSize=12, showRuler=0
 	Notebook BatchRenamerPanel#nbCmd spacing={4,0,5},changeableByCommandOnly=1
-	Notebook BatchRenamerPanel#nbCmd margins={0,0,440}, backRGB=(60066,60076,60063)
+	Notebook BatchRenamerPanel#nbCmd margins={0,0,435}, backRGB=(60066,60076,60063)
 	SetWindow BatchRenamerPanel#nbCmd, activeChildFrame=0
 	SetActiveSubwindow BatchRenamerPanel
 
@@ -560,6 +560,11 @@ static function FilterHook(STRUCT WMWinHookStruct &s)
 		KillDataFolder /Z root:Packages:BatchRenamer
 		SaveWindowPosition(s.winName)
 		return 1
+	endif
+	
+	if(s.eventcode==6) // resize
+		GetWindow $s.winName wsize
+		Notebook BatchRenamerPanel#nbCmd margins={0,0,435+(V_right-V_left)-470}
 	endif
 		
 	GetWindow /Z BatchRenamerPanel#nbFilter active
