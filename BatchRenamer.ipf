@@ -2,7 +2,7 @@
 #pragma rtGlobals=3
 #pragma DefaultTab={3,20,4}
 #pragma ModuleName=BatchRenamer
-#pragma version=1.2
+#pragma version=1.3
 
 #include <WaveSelectorWidget>
 
@@ -85,8 +85,8 @@ function BatchRename()
 	DFREF dfr = root:Packages:BatchRenamer
 	string /G dfr:strFilter=""
 	Make /O/N=0/T dfr:wPaths
-	Make /O/N=(0,4)/T dfr:renamelistwave /wave=renamelistwave
-	setDimLabels("Current;Type;NewName;\JC⊗;", 1, renamelistwave)
+	Make /O/N=(0,4)/T dfr:NamesListWave /wave=NamesListWave
+	setDimLabels("Current;Type;NewName;\JC⊗;", 1, NamesListWave)
 	
 	Make/O/B/U/N=(0,4,3) dfr:sw /wave=sw
 	SetDimLabel 2, 1, backColors, sw
@@ -142,8 +142,8 @@ function BatchRename()
 	ListBox listboxSelector, win=BatchRenamerPanel, pos={10,30}, size={160,200}, focusRing=0
 	MakeListIntoWaveSelector("BatchRenamerPanel", "listboxSelector", content=WMWS_Waves, nameFilterProc="BatchRenamer#filterFunc")
 	
-	ListBox listboxRenamer, win=BatchRenamerPanel, pos={240,50}, size={220,200}, focusRing=0, listWave=renamelistwave, widths={10,5,10,3}
-	ListBox listboxRenamer, win=BatchRenamerPanel, Proc=BatchRenamer#ListboxFunc, selwave=dfr:sw, colorWave=wcolor
+	ListBox listboxRenamer, win=BatchRenamerPanel, pos={240,50}, size={220,200}, focusRing=0, listWave=NamesListWave, widths={10,5,10,3}
+	ListBox listboxRenamer, win=BatchRenamerPanel, Proc=BatchRenamer#ListboxFunc, selwave=dfr:sw, colorWave=wcolor, userColumnResize=1
 	
 	Button buttonSelect, win=BatchRenamerPanel,pos={180,100},size={50,20},fsize=14, title="→", valueColor=(0,0,65535), fstyle=1
 	Button buttonSelect, win=BatchRenamerPanel, Proc=BatchRenamer#ButtonFunc
@@ -260,24 +260,31 @@ static function ListboxFunc(STRUCT WMListboxAction &s)
 		
 	if(s.eventCode==2 && s.col==3 && s.row>-1 && s.row<DimSize(s.listWave,0)) // mouseup
 		int mousedownrow=str2num(GetUserData(s.win,s.ctrlName,"mousedownrow"))
-		if(s.row!=mousedownrow)
-			return 0
+		if(s.row==mousedownrow)
+			wave /T wPaths=root:Packages:BatchRenamer:wPaths
+			wave sw=root:Packages:BatchRenamer:sw
+			DeletePoints /M=0 s.row, 1, wPaths, s.listWave, sw
+			if(DimSize(s.listWave,0)==0) // when the last row is deleted the wave becomes 1D
+				Redimension /N=(0,4) s.listWave
+				setDimLabels("Current;Type;NewName;\JC⊗;", 1, s.listWave)
+				Redimension /N=(0,4,3) sw
+				SetDimLabel 2, 1, backColors, sw
+				SetDimLabel 2, 2, foreColors, sw
+			endif
+			generateCmd()
 		endif
-		wave /T wPaths=root:Packages:BatchRenamer:wPaths
-		wave sw=root:Packages:BatchRenamer:sw
-		DeletePoints /M=0 s.row, 1, wPaths, s.listWave, sw
-		if(DimSize(s.listWave,0)==0) // when the last row is deleted the wave becomes 1D
-			Redimension /N=(0,4) s.listWave
-			setDimLabels("Current;Type;NewName;\JC⊗;", 1, s.listWave)
-			Redimension /N=(0,4,3) sw
-			SetDimLabel 2, 1, backColors, sw
-			SetDimLabel 2, 2, foreColors, sw
-		endif
-		generateCmd()
 	endif
 	
 	if(s.eventCode==2)
 		ListBox $s.ctrlName, win=$s.win, userdata(mousedownrow)=""
+	endif
+	
+	if(s.eventCode==11) // column resize
+		ControlInfo /W=$(s.win) $(s.ctrlName)
+		variable c1, c2, c3, c4
+		sscanf S_columnWidths, "%g,%g,%g,%g", c1, c2, c3, c4
+		c1/=10;c2/=10;c3/=10;c4/=10
+		ListBox $(s.ctrlName) win=$(s.win), widths={c1, c2, c3, c4}
 	endif
 end
 	
@@ -365,15 +372,15 @@ static function renameItems()
 	endfor
 	WS_UpdateWaveSelectorWidget("BatchRenamerPanel", "listboxSelector")
 	DFREF dfr = root:Packages:BatchRenamer
-	wave /T/SDFR=dfr wPaths, renamelistwave
-	Redimension /N=(0,-1) wPaths, renamelistwave
-	setDimLabels("Current;Type;NewName;\JC⊗;", 1, renamelistwave)
+	wave /T/SDFR=dfr wPaths, NamesListWave
+	Redimension /N=(0,-1) wPaths, NamesListWave
+	setDimLabels("Current;Type;NewName;\JC⊗;", 1, NamesListWave)
 	setNewNames()
 end
 
 static function selectItems()
 	DFREF dfr = root:Packages:BatchRenamer
-	wave /T/SDFR=dfr wPaths, renamelistwave
+	wave /T/SDFR=dfr wPaths, NamesListWave
 	wave /SDFR=dfr sw
 	ControlInfo /W=BatchRenamerPanel popupType
 	string strType=RemoveEnding(s_value, "s")
@@ -388,9 +395,9 @@ static function selectItems()
 		wPaths[numpnts(wPaths)]={wNew[i]}
 //		other possibilities for fake delete button: ❌❎⊗⨷⦻✘
 		if(GrepString(strType, "Wave")) // unquote liberal wavenames
-			renamelistwave[DimSize(renamelistwave,0)][]={{NameOfWave($wNew[i])},{strType},{""},{"\JC🅧"}}
+			NamesListWave[DimSize(NamesListWave,0)][]={{NameOfWave($wNew[i])},{strType},{""},{"\JC🅧"}}
 		else
-			renamelistwave[DimSize(renamelistwave,0)][]={{ParseFilePath(0, wNew[i], ":", 1, 0)},{strType},{""},{"\JC🅧"}}
+			NamesListWave[DimSize(NamesListWave,0)][]={{ParseFilePath(0, wNew[i], ":", 1, 0)},{strType},{""},{"\JC🅧"}}
 		endif
 	endfor
 	Redimension /N=(DimSize(wPaths, 0), -1, -1) sw
@@ -399,9 +406,9 @@ end
 
 static function setNewNames()
 	DFREF dfr = root:Packages:BatchRenamer
-	wave /T/SDFR=dfr renamelistwave
+	wave /T/SDFR=dfr NamesListWave
 	
-	if(DimSize(renamelistwave,0)==0)
+	if(DimSize(NamesListWave,0)==0)
 		generateCmd()
 		return 0
 	endif
@@ -423,13 +430,13 @@ static function setNewNames()
 	ControlInfo /W=BatchRenamerPanel setvarWith
 	strWith=s_value
 	
-	renamelistwave[][2]=strPre+ReplaceString(strThis,renamelistwave[p][0],strWith)+strSuf
+	NamesListWave[][2]=strPre+ReplaceString(strThis,NamesListWave[p][0],strWith)+strSuf
 	generateCmd()
 end
 
 static function generateCmd()
 	DFREF dfr = root:Packages:BatchRenamer
-	wave /T/SDFR=dfr wPaths, renamelistwave
+	wave /T/SDFR=dfr wPaths, NamesListWave
 	wave /SDFR=dfr sw
 	
 	int i
@@ -441,13 +448,12 @@ static function generateCmd()
 		string strFolder=ParseFilePath(1, wPaths[i], ":", 1, 0)
 		DFREF folder=$strFolder
 		if(DataFolderRefStatus(folder)!=1) // shouldn't arrive here
-			//cmd = "** data folder does not exist **"
-			error += 1-(error & 1)
+			error += 1-(error & 1) // set bit zero
 			continue
 		endif
 		
 		int type
-		strswitch(renamelistwave[i][%Type])
+		strswitch(NamesListWave[i][%Type])
 			case "DataFolder":
 				type=11
 				break
@@ -463,33 +469,29 @@ static function generateCmd()
 		endswitch
 		
 		if(type==11) // data folder
-			if(DataFolderExists(strFolder+":"+renamelistwave[i][%NewName]))
-				//cmd = "** name conflict **"
-				error += 2-(error & 2)
+			if(DataFolderExists(strFolder+":"+NamesListWave[i][%NewName]))
+				error += 2-(error & 2) // set bit 1
 				sw[i][2][%foreColors]=1
 				sw[i][2][%backColors]=3
 				continue
 			endif
-			if(CheckName(renamelistwave[i][%NewName], 11))
-				//cmd = "** illegal name **"
-				error += 4-(error & 4)
+			if(CheckName(NamesListWave[i][%NewName], 11))
+				error += 4-(error & 4) // set bit 2
 				sw[i][2][%foreColors]=1
 				sw[i][2][%backColors]=3
 				continue
 			endif
 			sw[i][2][%foreColors]=0
 			sw[i][2][%backColors]=0
-			cmd += "RenameDataFolder " + wPaths[i] + " " + renamelistwave[i][%NewName] + "; "
+			cmd += "RenameDataFolder " + wPaths[i] + " " + NamesListWave[i][%NewName] + "; "
 		else
-			if(exists(strFolder+PossiblyQuoteName(renamelistwave[i][%NewName])))
-//				cmd = "** name conflict **"
+			if(exists(strFolder+PossiblyQuoteName(NamesListWave[i][%NewName])))
 				error += 2-(error & 2)
 				sw[i][2][%foreColors]=1
 				sw[i][2][%backColors]=3
 				continue
 			endif
-			if(CheckName(renamelistwave[i][%NewName], type))
-//				cmd = "** illegal name **"
+			if(CheckName(NamesListWave[i][%NewName], type))
 				error += 4-(error & 4)
 				sw[i][2][%foreColors]=1
 				sw[i][2][%backColors]=3
@@ -498,9 +500,9 @@ static function generateCmd()
 			sw[i][2][%foreColors]=0
 			sw[i][2][%backColors]=0
 			if(DataFolderRefsEqual(GetDataFolderDFR(), folder))
-				cmd += "Rename " + PossiblyQuoteName(renamelistwave[i][%Current]) + " " + PossiblyQuoteName(renamelistwave[i][%NewName]) + "; "
+				cmd += "Rename " + PossiblyQuoteName(NamesListWave[i][%Current]) + " " + PossiblyQuoteName(NamesListWave[i][%NewName]) + "; "
 			else
-				cmd += "Rename " + wPaths[i]  + " " +  PossiblyQuoteName(renamelistwave[i][%NewName]) + "; "
+				cmd += "Rename " + wPaths[i]  + " " +  PossiblyQuoteName(NamesListWave[i][%NewName]) + "; "
 			endif
 		endif
 	endfor
@@ -554,6 +556,7 @@ static function ClearText(int doIt)
 end
 
 // intercept and deal with keyboard events in notebook subwindow
+// also deal with killing or resizing panel
 static function FilterHook(STRUCT WMWinHookStruct &s)
 	
 	if(s.eventcode==2) // window is being killed
