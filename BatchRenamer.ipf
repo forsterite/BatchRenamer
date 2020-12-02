@@ -2,9 +2,10 @@
 #pragma rtGlobals=3
 #pragma DefaultTab={3,20,4}
 #pragma ModuleName=BatchRenamer
-#pragma version=1.3
+#pragma version=1.4
 
 #include <WaveSelectorWidget>
+#include <Resize Controls>
 
 static constant kTesting=1
 
@@ -233,7 +234,6 @@ function BatchRename()
 		PauseForUser BatchRenamerPanel
 	endif
 end
-
 
 static function ValidCell(STRUCT WMListboxAction &s)
 	return s.row>-1 && s.col>-1 && s.row<DimSize(s.listWave, 0) && s.col<DimSize(s.listWave, 1)
@@ -568,6 +568,7 @@ static function FilterHook(STRUCT WMWinHookStruct &s)
 	if(s.eventcode==6) // resize
 		GetWindow $s.WinName wsize
 		Notebook BatchRenamerPanel#nbCmd margins={0,0,435+(V_right-V_left)-470}
+		Notebook BatchRenamerPanel#nbCmd selection={startOfFile,startOfFile}, findText={"",1}
 	endif
 		
 	GetWindow /Z BatchRenamerPanel#nbFilter active
@@ -698,13 +699,6 @@ static function setDimLabels(strList, dim, w)
 		SetDimLabel dim, i, $StringFromList(i, strList), w
 	endfor
 	return 1
-end
-
-static function /S unquote(string s)
-	if(GrepString(s, "(^').*('$)"))
-		return s[1, strlen(s)-2]
-	endif
-	return s
 end
 
 // PNG: width= 90, height= 30
