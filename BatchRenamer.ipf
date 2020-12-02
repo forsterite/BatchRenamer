@@ -701,13 +701,6 @@ static function setDimLabels(strList, dim, w)
 	return 1
 end
 
-static function /S unquote(string s)
-	if(GrepString(s, "(^').*('$)"))
-		return s[1, strlen(s)-2]
-	endif
-	return s
-end
-
 // PNG: width= 90, height= 30
 static Picture ClearTextPicture
 	ASCII85Begin
