@@ -2,19 +2,18 @@
 #pragma rtGlobals=3
 #pragma DefaultTab={3,20,4}
 #pragma ModuleName=BatchRenamer
-#pragma version=1.4
+#pragma version=1.5
 
 #include <WaveSelectorWidget>
 #include <Resize Controls>
 
-static constant kTesting=1
+static constant kTesting = 1
 
-strconstant ksPackageName=BatchRenamer
-strconstant ksPrefsFileName=acwBatchRenamer.bin
-constant kPrefsVersion=100
+strconstant ksPackageName = BatchRenamer
+strconstant ksPrefsFileName = acwBatchRenamer.bin
+constant kPrefsVersion = 100
 
 // to do
-// create help
 // an option to hide the packages folder in the wave selector widget would be nice!
 
 menu "Data"
@@ -28,19 +27,19 @@ end
 static Structure PackagePrefs
 	uint32 version
 	STRUCT Rect win // window position and size, 8 bytes
-	char reserved[128-4-8]
+	char reserved[128 - 4 - 8]
 EndStructure
 
 // set prefs structure to default values
 static function PrefsSetDefaults(STRUCT PackagePrefs &prefs)
-	prefs.version=kPrefsVersion
-	prefs.win.left=20
-	prefs.win.top=20
-	prefs.win.right=20+470
-	prefs.win.bottom=20+340
+	prefs.version = kPrefsVersion
+	prefs.win.left = 20
+	prefs.win.top = 20
+	prefs.win.right = 20 + 470
+	prefs.win.bottom = 20 + 340
 	int i
 	for(i=0;i<(128-12);i+=1)
-		prefs.reserved[i]=0
+		prefs.reserved[i] = 0
 	endfor
 end
 
@@ -52,51 +51,45 @@ static function LoadPrefs(STRUCT PackagePrefs &prefs)
 end
 
 // save window position in package prefs
-static function SaveWindowPosition(string strWin)
-	
+static function SaveWindowPosition(string strWin)	
 	STRUCT PackagePrefs prefs
-	LoadPrefs(prefs)
-	
-	string recreation=WinRecreation(strWin, 0)
-	variable index, top, left, bottom, right
+	LoadPrefs(prefs)	
+	string recreation = WinRecreation(strWin, 0)
+	int index, top, left, bottom, right
 	// save window position
-	index=strsearch(recreation, "/W=(", 0)
-	if (index>0)
+	index = strsearch(recreation, "/W=(", 0)
+	if (index > 0)
 		sscanf recreation[index,strlen(recreation)-1], "/W=(%g,%g,%g,%g)", left, top, right, bottom
-		prefs.win.top=top
-		prefs.win.left=left
-		prefs.win.bottom=bottom
-		prefs.win.right=right
-	endif
-	
+		prefs.win.top = top
+		prefs.win.left = left
+		prefs.win.bottom = bottom
+		prefs.win.right = right
+	endif	
 	SavePackagePreferences ksPackageName, ksPrefsFileName, 0, prefs
 end
 
 function BatchRename()
-
-	DoWindow /K BatchRenamerPanel
-	
-	// load package preferences
 	STRUCT PackagePrefs prefs
 	LoadPrefs(prefs)
+	DoWindow /K BatchRenamerPanel
 	
 	// create package data folder
 	NewDataFolder /O root:Packages
 	NewDataFolder /O root:Packages:BatchRenamer
 	DFREF dfr = root:Packages:BatchRenamer
-	string /G dfr:strFilter=""
+	string /G dfr:strFilter = ""
 	Make /O/N=0/T dfr:wPaths
 	Make /O/N=(0,4)/T dfr:NamesListWave /wave=NamesListWave
 	setDimLabels("Current;Type;NewName;\JC⊗;", 1, NamesListWave)
 	
 	Make/O/B/U/N=(0,4,3) dfr:sw /wave=sw
-	SetDimLabel 2, 1, backColors, sw
-	SetDimLabel 2, 2, foreColors, sw
-	Make/n=(2,3)/O/W/U dfr:wcolor /wave=wcolor
+	setDimLabels(";backColors;foreColors;", 2, sw)
+	Make/N=(2,3)/O/W/U dfr:wcolor /wave=wcolor
 	wcolor[1][]={{65535},{0},{0}} // red
 	wcolor[2][]={{0},{0},{65535}} // blue
 	wcolor[3][]={{65535},{60000},{60000}} // pink
-	
+	wcolor[4][]={{2},{39321},{1}} // dark green
+
 	NewPanel /K=1/N=BatchRenamerPanel/W=(prefs.win.left,prefs.win.top,prefs.win.left+470,prefs.win.top+340) as "Batch Renamer"
 	
 	DefineGuide/W=BatchRenamerPanel FGc={FL,0.5,FR}
@@ -114,7 +107,7 @@ function BatchRename()
 	DefineGuide/W=BatchRenamerPanel fgb={cmdT,-5}
 	DefineGuide/W=BatchRenamerPanel fgt={cmdT,-22}
 	DefineGuide/W=BatchRenamerPanel fgr={FGc,-82}
-	NewNotebook /F=1 /N=nbFilter /HOST=BatchRenamerPanel /W=(10,500,5200,1000)/FG=($"",fgt,fgr,fgb) /OPTS=3
+	NewNotebook /F=1/N=nbFilter/HOST=BatchRenamerPanel/W=(10,500,5200,1000)/FG=($"",fgt,fgr,fgb)/OPTS=3
 	Notebook BatchRenamerPanel#nbFilter showRuler=0
 	Notebook BatchRenamerPanel#nbFilter spacing={1, 0, 0}
 	Notebook BatchRenamerPanel#nbFilter margins={0,0,1000}
@@ -128,26 +121,36 @@ function BatchRename()
 	
 	PopupMenu popupType, win=BatchRenamerPanel, pos={10, 5}, value="Waves;Variables;Strings;DataFolders;"
 	PopupMenu popupType, win=BatchRenamerPanel, Proc=BatchRenamer#PopMenuFunc
+	PopupMenu popupType, win=BatchRenamerPanel, help={"Select an object type to display in the browser below"}
 
-	CheckBox checkPre,pos={250,8},size={15,15},title="",value=0,mode=0, Proc=BatchRenamer#CheckFunc
-	CheckBox checkSuf,pos={360,8},size={15,15},title="",value=0,mode=0, Proc=BatchRenamer#CheckFunc
+	CheckBox checkPre, win=BatchRenamerPanel,pos={250,8},size={15,15},title="",value=0,mode=0, Proc=BatchRenamer#CheckFunc
+	CheckBox checkPre, win=BatchRenamerPanel, help={"Add a prefix when selected"}
+	CheckBox checkSuf, win=BatchRenamerPanel,pos={360,8},size={15,15},title="",value=0,mode=0, Proc=BatchRenamer#CheckFunc
+	CheckBox checkSuf, win=BatchRenamerPanel, help={"Append a suffix when selected"}
 	SetVariable setvarPrefix, win=BatchRenamerPanel, pos={270,10}, size={70,14}, title="Prefix:"
 	SetVariable setvarPrefix, win=BatchRenamerPanel, value=_STR:"pre_", Proc=BatchRenamer#SetVarFunc, focusRing=0
+	SetVariable setvarPrefix, win=BatchRenamerPanel, help={"Prepend this text to all item names"}
 	SetVariable setvarSuffix, win=BatchRenamerPanel, pos={380,10}, size={70,14}, title="Suffix:"
 	SetVariable setvarSuffix, win=BatchRenamerPanel, value=_STR:"_suf", Proc=BatchRenamer#SetVarFunc, focusRing=0
+	SetVariable setvarSuffix, win=BatchRenamerPanel, help={"Append this text to all item names"}
 	SetVariable setvarThis, win=BatchRenamerPanel, pos={270,30}, size={90,14}, title="Replace"
 	SetVariable setvarThis, win=BatchRenamerPanel, value=_STR:"", Proc=BatchRenamer#SetVarFunc, focusRing=0
+	SetVariable setvarThis, win=BatchRenamerPanel, help={"Replace specified text in all item names"}
 	SetVariable setvarWith, win=BatchRenamerPanel, pos={365,30}, size={80,14}, title="with"
 	SetVariable setvarWith, win=BatchRenamerPanel, value=_STR:"", Proc=BatchRenamer#SetVarFunc, focusRing=0
+	SetVariable setvarWith, win=BatchRenamerPanel, help={"Replace specified text in all item names"}
 	
 	ListBox listboxSelector, win=BatchRenamerPanel, pos={10,30}, size={160,200}, focusRing=0
 	MakeListIntoWaveSelector("BatchRenamerPanel", "listboxSelector", content=WMWS_Waves, nameFilterProc="BatchRenamer#filterFunc")
-	
+	WS_SetNotificationProc("BatchRenamerPanel", "listboxSelector", "BatchRenamer#WS_NotificationProc")
+		
 	ListBox listboxRenamer, win=BatchRenamerPanel, pos={240,50}, size={220,200}, focusRing=0, listWave=NamesListWave, widths={10,5,10,3}
 	ListBox listboxRenamer, win=BatchRenamerPanel, Proc=BatchRenamer#ListboxFunc, selwave=dfr:sw, colorWave=wcolor, userColumnResize=1
+	ListBox listboxRenamer, win=BatchRenamerPanel, mode=9
 	
 	Button buttonSelect, win=BatchRenamerPanel,pos={180,100},size={50,20},fsize=14, title="→", valueColor=(0,0,65535), fstyle=1
 	Button buttonSelect, win=BatchRenamerPanel, Proc=BatchRenamer#ButtonFunc
+	Button buttonSelect, win=BatchRenamerPanel, help={"Click here to move selected items from the browser on the left to the rename list on the right"}
 	Button buttonDoIt, win=BatchRenamerPanel,pos={15,313},size={55,20},fsize=14, title="Do It"
 	Button buttonDoIt, win=BatchRenamerPanel, Proc=BatchRenamer#ButtonFunc, disable=2
 	Button buttonCmd, win=BatchRenamerPanel,pos={90,313},size={105,20},fsize=14, title="To Cmd Line"
@@ -155,7 +158,7 @@ function BatchRename()
 	Button buttonClip, win=BatchRenamerPanel,pos={215,313},size={75,20},fsize=14, title="To Clip"
 	Button buttonClip, win=BatchRenamerPanel, Proc=BatchRenamer#ButtonFunc, disable=2
 	Button buttonHelp, win=BatchRenamerPanel,pos={310,313},size={60,20},fsize=14, title="Help"
-	Button buttonHelp, win=BatchRenamerPanel, Proc=BatchRenamer#ButtonFunc, disable=2
+	Button buttonHelp, win=BatchRenamerPanel, Proc=BatchRenamer#ButtonFunc//, disable=2
 	Button buttonCancel, win=BatchRenamerPanel,pos={390,313},size={65,20},fsize=14, title="Cancel"
 	Button buttonCancel, win=BatchRenamerPanel, Proc=BatchRenamer#ButtonFunc
 	
@@ -201,10 +204,10 @@ function BatchRename()
 	Button buttonCmd,userdata(ResizeControlsInfo)= A"!!,En!!#BVJ,hpa!!#<Xz!!#](Aon\"Qzzzzzzzzzzzzzz!!#](Aon\"Qzz"
 	Button buttonCmd,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#?(FEDG<zzzzzzzzzzz"
 	Button buttonCmd,userdata(ResizeControlsInfo) += A"zzz!!#?(FEDG<zzzzzzzzzzzzzz!!!"
-	Button buttonClip,userdata(ResizeControlsInfo)= A"!!,Gg!!#BVJ,hp%!!#<Xz!!#](Aon\"Qzzzzzzzzzzzzzz!!#](Aon\"Qzz"
+	Button buttonClip,userdata(ResizeControlsInfo) = A"!!,Gg!!#BVJ,hp%!!#<Xz!!#](Aon\"Qzzzzzzzzzzzzzz!!#](Aon\"Qzz"
 	Button buttonClip,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#?(FEDG<zzzzzzzzzzz"
 	Button buttonClip,userdata(ResizeControlsInfo) += A"zzz!!#?(FEDG<zzzzzzzzzzzzzz!!!"
-	Button buttonHelp,userdata(ResizeControlsInfo)= A"!!,HV!!#BVJ,hoT!!#<Xz!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
+	Button buttonHelp,userdata(ResizeControlsInfo) = A"!!,HV!!#BVJ,hoT!!#<Xz!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
 	Button buttonHelp,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#?(FEDG<zzzzzzzzzzz"
 	Button buttonHelp,userdata(ResizeControlsInfo) += A"zzz!!#?(FEDG<zzzzzzzzzzzzzz!!!"
 	Button buttonCancel,userdata(ResizeControlsInfo)= A"!!,I)!!#BVJ,hof!!#<Xz!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
@@ -212,17 +215,17 @@ function BatchRename()
 	Button buttonCancel,userdata(ResizeControlsInfo) += A"zzz!!#?(FEDG<zzzzzzzzzzzzzz!!!"
 	
 	// resizing userdata for panel
-	SetWindow kwTopWin,userdata(ResizeControlsInfo)= A"!!*'\"z!!#CP!!#Bdzzzzzzzzzzzzzzzzzzzzz"
+	SetWindow kwTopWin,userdata(ResizeControlsInfo) = A"!!*'\"z!!#CP!!#Bdzzzzzzzzzzzzzzzzzzzzz"
 	SetWindow kwTopWin,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzzzzzzzzzzzzzzz"
 	SetWindow kwTopWin,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzzzzzzzzz!!!"
-	SetWindow kwTopWin,userdata(ResizeControlsGuides)=  "FGc;cmdR;cmdT;cmdB;fgb;fgt;fgr;"
-	SetWindow kwTopWin,userdata(ResizeControlsInfoFGc)=  "NAME:FGc;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:0;POSITION:235.00;GUIDE1:FL;GUIDE2:FR;RELPOSITION:0.5;"
-	SetWindow kwTopWin,userdata(ResizeControlsInfocmdR)=  "NAME:cmdR;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:0;POSITION:460.00;GUIDE1:FR;GUIDE2:;RELPOSITION:-10;"
-	SetWindow kwTopWin,userdata(ResizeControlsInfocmdT)=  "NAME:cmdT;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:1;POSITION:255.00;GUIDE1:FT;GUIDE2:FB;RELPOSITION:0.75;"
-	SetWindow kwTopWin,userdata(ResizeControlsInfocmdB)=  "NAME:cmdB;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:1;POSITION:300.00;GUIDE1:FB;GUIDE2:;RELPOSITION:-40;"
-	SetWindow kwTopWin,userdata(ResizeControlsInfofgb)=  "NAME:fgb;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:1;POSITION:250.00;GUIDE1:cmdT;GUIDE2:;RELPOSITION:-5;"
-	SetWindow kwTopWin,userdata(ResizeControlsInfofgt)=  "NAME:fgt;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:1;POSITION:233.00;GUIDE1:cmdT;GUIDE2:;RELPOSITION:-22;"
-	SetWindow kwTopWin,userdata(ResizeControlsInfofgr)=  "NAME:fgr;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:0;POSITION:153.00;GUIDE1:FGc;GUIDE2:;RELPOSITION:-82;"
+	SetWindow kwTopWin,userdata(ResizeControlsGuides) = "FGc;cmdR;cmdT;cmdB;fgb;fgt;fgr;"
+	SetWindow kwTopWin,userdata(ResizeControlsInfoFGc) = "NAME:FGc;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:0;POSITION:235.00;GUIDE1:FL;GUIDE2:FR;RELPOSITION:0.5;"
+	SetWindow kwTopWin,userdata(ResizeControlsInfocmdR) = "NAME:cmdR;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:0;POSITION:460.00;GUIDE1:FR;GUIDE2:;RELPOSITION:-10;"
+	SetWindow kwTopWin,userdata(ResizeControlsInfocmdT) = "NAME:cmdT;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:1;POSITION:255.00;GUIDE1:FT;GUIDE2:FB;RELPOSITION:0.75;"
+	SetWindow kwTopWin,userdata(ResizeControlsInfocmdB) = "NAME:cmdB;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:1;POSITION:300.00;GUIDE1:FB;GUIDE2:;RELPOSITION:-40;"
+	SetWindow kwTopWin,userdata(ResizeControlsInfofgb) = "NAME:fgb;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:1;POSITION:250.00;GUIDE1:cmdT;GUIDE2:;RELPOSITION:-5;"
+	SetWindow kwTopWin,userdata(ResizeControlsInfofgt) = "NAME:fgt;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:1;POSITION:233.00;GUIDE1:cmdT;GUIDE2:;RELPOSITION:-22;"
+	SetWindow kwTopWin,userdata(ResizeControlsInfofgr) = "NAME:fgr;WIN:BatchRenamerPanel;TYPE:User;HORIZONTAL:0;POSITION:153.00;GUIDE1:FGc;GUIDE2:;RELPOSITION:-82;"
 
 	// resizing panel hook
 	SetWindow BatchRenamerPanel hook(ResizeControls)=ResizeControls#ResizeControlsHook
@@ -243,71 +246,88 @@ end
 static function ListboxFunc(STRUCT WMListboxAction &s)
 	
 	if(s.eventCode==1 && s.col==3) // mousedown
-		if(ValidCell(s)==0)
+		if(ValidCell(s) == 0)
 			return 0
 		endif
 		ListBox $s.ctrlName, win=$s.win, userdata(mousedownrow)=num2str(s.row)
-		s.selwave[s.row][s.col][%backColors]=2
-		DoUpdate /W=$s.win
-		int buttondown
-		do
-			GetMouse /W=$s.win
-			buttondown=V_flag&1
-		while(buttondown)
-		// reset color here, in case mouse is not over same cell for mouseup
-		s.selwave[s.row][s.col][%backColors]=0
 	endif
 		
 	if(s.eventCode==2 && s.col==3 && s.row>-1 && s.row<DimSize(s.listWave,0)) // mouseup
 		int mousedownrow=str2num(GetUserData(s.win,s.ctrlName,"mousedownrow"))
 		if(s.row==mousedownrow)
 			wave /T wPaths=root:Packages:BatchRenamer:wPaths
-			wave sw=root:Packages:BatchRenamer:sw
-			DeletePoints /M=0 s.row, 1, wPaths, s.listWave, sw
-			if(DimSize(s.listWave,0)==0) // when the last row is deleted the wave becomes 1D
+			//wave sw=root:Packages:BatchRenamer:sw
+			DeletePoints /M=0 s.row, 1, wPaths, s.listWave, s.selwave
+			if(DimSize(s.listWave,0) == 0) // when the last row is deleted the wave becomes 1D
 				Redimension /N=(0,4) s.listWave
 				setDimLabels("Current;Type;NewName;\JC⊗;", 1, s.listWave)
-				Redimension /N=(0,4,3) sw
-				SetDimLabel 2, 1, backColors, sw
-				SetDimLabel 2, 2, foreColors, sw
+				Redimension /N=(0,4,3) s.selwave
+				setDimLabels(";backColors;foreColors;", 2, s.selwave)
 			endif
 			generateCmd()
 		endif
 	endif
 	
-	if(s.eventCode==2)
+	if(s.eventCode == 2) // mouseup
 		ListBox $s.ctrlName, win=$s.win, userdata(mousedownrow)=""
 	endif
 	
-	if(s.eventCode==11) // column resize
+	if (s.eventCode==12 && (s.row==8 || s.row==127)) // backspace or delete
+		int i
+		wave /T wPaths=root:Packages:BatchRenamer:wPaths
+		for(i=DimSize(s.listWave, 0)-1;i>=0;i-=1)
+			if (s.selwave[i][0][0])
+				DeletePoints /M=0 i, 1, wPaths, s.listWave, s.selwave
+			endif
+		endfor
+		if(DimSize(s.listWave,0) == 0) // when the last row is deleted the wave becomes 1D
+			Redimension /N=(0,4) s.listWave
+			setDimLabels("Current;Type;NewName;\JC⊗;", 1, s.listWave)
+			Redimension /N=(0,4,3) s.selwave
+			setDimLabels(";backColors;foreColors;", 2, s.selwave)
+		endif
+		generateCmd()
+	endif
+		
+	if(s.eventCode == 11) // column resize
 		ControlInfo /W=$(s.win) $(s.ctrlName)
 		variable c1, c2, c3, c4
 		sscanf S_columnWidths, "%g,%g,%g,%g", c1, c2, c3, c4
 		c1/=10;c2/=10;c3/=10;c4/=10
 		ListBox $(s.ctrlName) win=$(s.win), widths={c1, c2, c3, c4}
 	endif
+	return 0
 end
 	
 static function CheckFunc(STRUCT WMCheckboxAction &s)
-	if(s.eventcode==2)
+	if(s.eventcode == 2)
 		setNewNames()
 	endif
 	return 0
 end
 
 static function SetVarFunc(STRUCT WMSetVariableAction &s)
-	if(s.eventcode==8)
+	if(s.eventcode == 8)
 		setNewNames()
 	endif
 	return 0
 end
 
 static function PopMenuFunc(STRUCT WMPopupAction &pa)
-	if(pa.eventCode==2)
+	if(pa.eventCode == 2)
 		MakeListIntoWaveSelector("BatchRenamerPanel", "listboxSelector", content=pa.popNum, nameFilterProc="BatchRenamer#filterFunc")
 		WS_UpdateWaveSelectorWidget("BatchRenamerPanel", "listboxSelector")
 	endif
 	return 0
+end
+
+static function WS_NotificationProc(string SelectedItem, variable EventCode)
+	if (EventCode==3 && strlen(SelectedItem)) // double click
+		STRUCT WMButtonAction s
+		s.ctrlName="buttonSelect"
+		s.eventCode=2
+		ButtonFunc(s)
+	endif
 end
 
 static function ButtonFunc(STRUCT WMButtonAction &s)
@@ -333,7 +353,7 @@ static function ButtonFunc(STRUCT WMButtonAction &s)
 			copyCmd(destination="Clip")
 			break
 		case "buttonHelp":
-			
+			help()
 			break
 		case "buttonCancel":
 			KillWindow /Z $s.win
@@ -359,7 +379,7 @@ static function copyCmd([string destination])
 end
 
 static function renameItems()
-	string cmd=""
+	string cmd = ""
 	Notebook BatchRenamerPanel#nbCmd selection={startOfFile,endofFile}
 	GetSelection Notebook, BatchRenamerPanel#nbCmd, 2
 	Notebook BatchRenamerPanel#nbCmd selection={endofFile,endofFile}
@@ -373,8 +393,10 @@ static function renameItems()
 	WS_UpdateWaveSelectorWidget("BatchRenamerPanel", "listboxSelector")
 	DFREF dfr = root:Packages:BatchRenamer
 	wave /T/SDFR=dfr wPaths, NamesListWave
-	Redimension /N=(0,-1) wPaths, NamesListWave
+	wave sw=dfr:sw
+	Redimension /N=(0,-1,-1) wPaths, NamesListWave, sw
 	setDimLabels("Current;Type;NewName;\JC⊗;", 1, NamesListWave)
+	setDimLabels(";backColors;foreColors;", 2, sw)
 	setNewNames()
 end
 
@@ -389,7 +411,7 @@ static function selectItems()
 	int numItems=numpnts(wNew)
 	for(i=0;i<numItems;i++)
 		FindValue /TEXT=wNew[i]/TXOP=4 wPaths
-		if(V_value>-1)
+		if(V_value > -1)
 			continue
 		endif
 		wPaths[numpnts(wPaths)]={wNew[i]}
@@ -397,7 +419,7 @@ static function selectItems()
 		if(GrepString(strType, "Wave")) // unquote liberal wavenames
 			NamesListWave[DimSize(NamesListWave,0)][]={{NameOfWave($wNew[i])},{strType},{""},{"\JC🅧"}}
 		else
-			NamesListWave[DimSize(NamesListWave,0)][]={{ParseFilePath(0, wNew[i], ":", 1, 0)},{strType},{""},{"\JC🅧"}}
+			NamesListWave[DimSize(NamesListWave,0)][]={{unquote(ParseFilePath(0, wNew[i], ":", 1, 0))},{strType},{""},{"\JC🅧"}}
 		endif
 	endfor
 	Redimension /N=(DimSize(wPaths, 0), -1, -1) sw
@@ -406,15 +428,12 @@ end
 
 static function setNewNames()
 	DFREF dfr = root:Packages:BatchRenamer
-	wave /T/SDFR=dfr NamesListWave
-	
-	if(DimSize(NamesListWave,0)==0)
+	wave /T/SDFR=dfr NamesListWave	
+	if (DimSize(NamesListWave,0) == 0)
 		generateCmd()
 		return 0
-	endif
-	
-	string strPre="", strSuf="", strThis="", strWith=""
-	
+	endif	
+	string strPre="", strSuf="", strThis="", strWith=""	
 	ControlInfo /W=BatchRenamerPanel checkPre
 	if(V_Value)
 		ControlInfo /W=BatchRenamerPanel setvarPrefix
@@ -428,9 +447,8 @@ static function setNewNames()
 	ControlInfo /W=BatchRenamerPanel setvarThis
 	strThis=s_value
 	ControlInfo /W=BatchRenamerPanel setvarWith
-	strWith=s_value
-	
-	NamesListWave[][2]=strPre+ReplaceString(strThis,NamesListWave[p][0],strWith)+strSuf
+	strWith=s_value	
+	NamesListWave[][2] = strPre + ReplaceString(strThis,NamesListWave[p][0],strWith) + strSuf
 	generateCmd()
 end
 
@@ -439,106 +457,144 @@ static function generateCmd()
 	wave /T/SDFR=dfr wPaths, NamesListWave
 	wave /SDFR=dfr sw
 	
-	int i
-	int numItems=DimSize(wPaths,0)
-	string cmd=""
-	int error=0 // bitwise error code
+	int i, type
+	string cmd = "", strFolder = ""
+	int error = 0 // bitwise error code
 	
-	for(i=0;i<numItems;i++)
-		string strFolder=ParseFilePath(1, wPaths[i], ":", 1, 0)
-		DFREF folder=$strFolder
-		if(DataFolderRefStatus(folder)!=1) // shouldn't arrive here
-			error += 1-(error & 1) // set bit zero
+	for(i=DimSize(wPaths,0)-1;i>=0;i--) // step backward through list in case we are renaming parent folder
+		if(cmpstr(NamesListWave[i][%Current], NamesListWave[i][%NewName]) == 0)
+			sw[i][2][%foreColors]=0
+			sw[i][2][%backColors]=0
+			continue // ignore items whose name will remain unchanged
+		elseif(cmpstr(NamesListWave[i][%NewName], CleanupName(NamesListWave[i][%NewName], 0)) == 0)
+			sw[i][2][%foreColors]=4 // green
+		else
+			sw[i][2][%foreColors]=2 // blue
+		endif
+		
+		strFolder = ParseFilePath(1, wPaths[i], ":", 1, 0)
+		DFREF folder = $strFolder
+		if(DataFolderRefStatus(folder) != 1) // shouldn't arrive here
+			error += 1 - (error & 1) // set bit zero
 			continue
 		endif
 		
-		int type
 		strswitch(NamesListWave[i][%Type])
 			case "DataFolder":
-				type=11
+				type = 11
 				break
 			case "Wave":
-				type=1
+				type = 1
 				break
 			case "Variable":
-				type=3
+				type = 3
 				break
 			case "String":
-				type=4
+				type = 4
 				break
 		endswitch
 		
-		if(type==11) // data folder
-			if(DataFolderExists(strFolder+":"+NamesListWave[i][%NewName]))
-				error += 2-(error & 2) // set bit 1
-				sw[i][2][%foreColors]=1
-				sw[i][2][%backColors]=3
+		if(type == 11) // data folder
+			if (DataFolderExists(strFolder + ":" + NamesListWave[i][%NewName]))
+				error += 2 - (error & 2) // set bit 1
+				sw[i][2][%foreColors] = 1
+				sw[i][2][%backColors] = 3
 				continue
 			endif
-			if(CheckName(NamesListWave[i][%NewName], 11))
-				error += 4-(error & 4) // set bit 2
-				sw[i][2][%foreColors]=1
-				sw[i][2][%backColors]=3
+			if (CheckName(NamesListWave[i][%NewName], 11))
+				error += 4 - (error & 4) // set bit 2
+				sw[i][2][%foreColors] = 1
+				sw[i][2][%backColors] = 3
 				continue
 			endif
-			sw[i][2][%foreColors]=0
-			sw[i][2][%backColors]=0
-			cmd += "RenameDataFolder " + wPaths[i] + " " + NamesListWave[i][%NewName] + "; "
+			sw[i][2][%backColors] = 0
+			cmd += "RenameDataFolder " + wPaths[i] + " " + PossiblyQuoteName(NamesListWave[i][%NewName]) + "; "
 		else
-			if(exists(strFolder+PossiblyQuoteName(NamesListWave[i][%NewName])))
-				error += 2-(error & 2)
-				sw[i][2][%foreColors]=1
-				sw[i][2][%backColors]=3
+			if (exists(strFolder + PossiblyQuoteName(NamesListWave[i][%NewName])))
+				error += 2 - (error & 2)
+				sw[i][2][%foreColors] = 1
+				sw[i][2][%backColors] = 3
 				continue
 			endif
-			if(CheckName(NamesListWave[i][%NewName], type))
-				error += 4-(error & 4)
-				sw[i][2][%foreColors]=1
-				sw[i][2][%backColors]=3
+			if (CheckName(NamesListWave[i][%NewName], type))
+				error += 4 - (error & 4)
+				sw[i][2][%foreColors] = 1
+				sw[i][2][%backColors] = 3
 				continue
 			endif
-			sw[i][2][%foreColors]=0
-			sw[i][2][%backColors]=0
+			sw[i][2][%backColors] = 0
 			if(DataFolderRefsEqual(GetDataFolderDFR(), folder))
 				cmd += "Rename " + PossiblyQuoteName(NamesListWave[i][%Current]) + " " + PossiblyQuoteName(NamesListWave[i][%NewName]) + "; "
 			else
-				cmd += "Rename " + wPaths[i]  + " " +  PossiblyQuoteName(NamesListWave[i][%NewName]) + "; "
+				cmd += "Rename " + wPaths[i] + " " + PossiblyQuoteName(NamesListWave[i][%NewName]) + "; "
 			endif
 		endif
 	endfor
-	cmd=RemoveEnding(cmd, "; ")
-	if(error)
-		cmd=""
-		if(error&1)
+	cmd = RemoveEnding(cmd, "; ")
+	if (error)
+		cmd = ""
+		if(error & 1)
 			cmd += "** data folder does not exist **\r"
 		endif
-		if(error&2)
+		if(error & 2)
 			cmd += "** name conflict **\r"
 		endif
-		if(error&4)
+		if(error & 4)
 			cmd += "** illegal name **\r"
 		endif
-		cmd=RemoveEnding(cmd, "\r")
+		cmd = RemoveEnding(cmd, "\r")
 	endif
 	
 	Notebook BatchRenamerPanel#nbCmd selection={startOfFile,endofFile}
 	Notebook BatchRenamerPanel#nbCmd text=cmd
 	Notebook BatchRenamerPanel#nbCmd selection={endofFile,endofFile}
 	
-	int disableButtons=2*(GrepString(cmd, "^\*"))
+	int disableButtons = 2*(GrepString(cmd, "^\*"))
 	Button buttonCmd, win=BatchRenamerPanel, disable=disableButtons
 	Button buttonDoIt, win=BatchRenamerPanel, disable=disableButtons
 	Button buttonClip, win=BatchRenamerPanel, disable=disableButtons
 end
 
+static function setDimLabels(string strList, int dim, wave w)
+	int numLabels = ItemsInList(strList)		
+	if (numLabels != DimSize(w, dim))
+		return 0
+	endif
+	int i
+	for(i=0;i<numLabels;i+=1)
+		SetDimLabel dim, i, $StringFromList(i, strList), w
+	endfor
+	return 1
+end
+
+static function /S unquote(string s)
+	int len = strlen(s)
+	if (cmpstr(s[0] + s[len-1], "''") == 0) 
+		return s[1,len-2]
+	endif
+	return s
+end
+
+static function help()
+	string cmd = "  Batch Renamer Help:;"
+	cmd += "Use this dialog to rename waves, variables, strings, and data folders.;"
+	cmd += "Select the type of object to be renamed in the popup menu.;"
+	cmd += "Use the arrow button to transfer selected items to the list on the right side of the dialog.;"
+	cmd += "Edit the Prefix, Suffix and Replace Text fields to generate new object names.;"
+	cmd += "Changed names are indicated by blue text for liberal names and green for non-liberal.;"
+	cmd += "Double-click to transfer a single item from the browser to the rename list.;"
+	cmd += "Press Delete or Backspace to remove selected rows from the rename list.;"
+	PopupContextualMenu cmd
+end
+
 // function used by WaveSelectorWidget
 static function filterFunc(string aName, variable contents)
 	DFREF dfr = root:Packages:BatchRenamer
-	SVAR strFilter=dfr:strFilter
+	SVAR strFilter = dfr:strFilter
 	string leafName = ParseFilePath(0, aName, ":", 1, 0)
 	int vFilter = 0
 	try
-		vFilter=GrepString(leafName, "(?i)"+strFilter); AbortOnRTE
+		vFilter = GrepString(leafName, "(?i)" + strFilter); AbortOnRTE
 	catch
 		int err = GetRTError(1)
 	endtry
@@ -550,8 +606,8 @@ static function ClearText(int doIt)
 		Notebook BatchRenamerPanel#nbFilter selection={startOfFile,endofFile}, textRGB=(50000,50000,50000), text="Filter"
 		Notebook BatchRenamerPanel#nbFilter selection={startOfFile,startOfFile}
 		Button buttonClear, win=BatchRenamerPanel, disable=3
-		SVAR strFilter=root:Packages:BatchRenamer:strFilter
-		strFilter=""
+		SVAR strFilter = root:Packages:BatchRenamer:strFilter
+		strFilter = ""
 	endif
 end
 
@@ -559,76 +615,76 @@ end
 // also deal with killing or resizing panel
 static function FilterHook(STRUCT WMWinHookStruct &s)
 	
-	if(s.eventcode==2) // window is being killed
+	if(s.eventcode == 2) // window is being killed
 		KillDataFolder /Z root:Packages:BatchRenamer
 		SaveWindowPosition(s.WinName)
 		return 1
 	endif
 	
-	if(s.eventcode==6) // resize
+	if(s.eventcode == 6) // resize
 		GetWindow $s.WinName wsize
 		Notebook BatchRenamerPanel#nbCmd margins={0,0,435+(V_right-V_left)-470}
 		Notebook BatchRenamerPanel#nbCmd selection={startOfFile,startOfFile}, findText={"",1}
 	endif
 		
 	GetWindow /Z BatchRenamerPanel#nbFilter active
-	if(V_Value==0)
+	if(V_Value == 0)
 		return 0
 	endif
 	
-	if(s.eventcode==22) // don't allow scrolling
+	if(s.eventCode == 22) // don't allow scrolling
 		return 1
 	endif
 	
 	DFREF dfr = root:Packages:BatchRenamer
-	SVAR strFilter=dfr:strFilter
-	int vLength=strlen(strFilter)
+	SVAR strFilter = dfr:strFilter
+	int vLength = strlen(strFilter)
 	
 	if(s.eventcode==3 && vLength==0) // mousedown
 		return 1 // don't allow mousedown when we have 'filter' displayed in nb
 	endif
 		
-	if(s.eventcode==10) // menu
+	if(s.eventcode == 10) // menu
 		strswitch(s.menuItem)
 			case "Paste":
-				string strScrap=GetScrapText()
-				strScrap=ReplaceString("\r", strScrap, "")
-				strScrap=ReplaceString("\n", strScrap, "")
-				strScrap=ReplaceString("\t", strScrap, "")
+				string strScrap = GetScrapText()
+				strScrap = ReplaceString("\r", strScrap, "")
+				strScrap = ReplaceString("\n", strScrap, "")
+				strScrap = ReplaceString("\t", strScrap, "")
 				
 				GetSelection Notebook, BatchRenamerPanel#nbFilter, 1 // get current position in notebook
-				if(vLength==0)
+				if(vLength == 0)
 					Notebook BatchRenamerPanel#nbFilter selection={startOfFile,endofFile}, text=strScrap
 				else
 					Notebook BatchRenamerPanel#nbFilter selection={(0,V_startPos),(0,V_endPos)}, text=strScrap
 				endif
-				vLength+=strlen(strScrap)-abs(V_endPos-V_startPos)
-				s.eventcode=11
+				vLength += strlen(strScrap) - abs(V_endPos - V_startPos)
+				s.eventcode = 11
 				// pretend this was a keyboard event to allow execution to continue
 				break
 			case "Cut":
 				GetSelection Notebook, BatchRenamerPanel#nbFilter, 3 // get current position in notebook
 				PutScrapText s_selection
 				Notebook BatchRenamerPanel#nbFilter selection={(0,V_startPos),(0,V_endPos)}, text=""
-				vLength-=strlen(s_selection)
-				s.eventcode=11
+				vLength -= strlen(s_selection)
+				s.eventcode = 11
 				break
 			case "Clear":
 				GetSelection Notebook, BatchRenamerPanel#nbFilter, 3 // get current position in notebook
 				Notebook BatchRenamerPanel#nbFilter selection={(0,V_startPos),(0,V_endPos)}, text="" // clear text
-				vLength-=strlen(s_selection)
-				s.eventcode=11
+				vLength -= strlen(s_selection)
+				s.eventcode = 11
 				break
 		endswitch
-		Button buttonClear, win=BatchRenamerPanel, disable=3*(vLength==0)
-		ClearText((vLength==0))
+		Button buttonClear, win=BatchRenamerPanel, disable=3*(vLength == 0)
+		ClearText((vLength == 0))
 	endif
 				
 	if(s.eventcode!=11)
 		return 0
 	endif
 	
-	if(vLength==0) // Remove "Filter" text before starting to deal with keyboard activity
+	if(vLength == 0) // Remove "Filter" text before starting to deal with keyboard activity
 		Notebook BatchRenamerPanel#nbFilter selection={startOfFile,endofFile}, text=""
 	endif
 	
@@ -641,64 +697,47 @@ static function FilterHook(STRUCT WMWinHookStruct &s)
 			break
 		case 28: // left arrow
 		case 29: // right arrow
-			ClearText((vLength==0)); return (vLength==0)
+			ClearText((vLength == 0)); return (vLength == 0)
 		case 8:
 		case 127: // delete or forward delete
 			GetSelection Notebook, BatchRenamerPanel#nbFilter, 1
-			if(V_startPos==V_endPos)
-				V_startPos -= (s.keycode==8)
-				V_endPos += (s.keycode==127)
+			if(V_startPos == V_endPos)
+				V_startPos -= (s.keycode == 8)
+				V_endPos += (s.keycode == 127)
 			endif
-			V_startPos=min(vLength,V_startPos); V_endPos=min(vLength,V_endPos)
-			V_startPos=max(0, V_startPos); V_endPos=max(0, V_endPos)
+			V_startPos = min(vLength,V_startPos); V_endPos = min(vLength,V_endPos)
+			V_startPos = max(0, V_startPos); V_endPos = max(0, V_endPos)
 			Notebook BatchRenamerPanel#nbFilter selection={(0,V_startPos),(0,V_endPos)}, text=""
-			vLength-=abs(V_endPos-V_startPos)
+			vLength -= abs(V_endPos - V_startPos)
 			break
 	endswitch
 		
 	// find and save current position
 	GetSelection Notebook, BatchRenamerPanel#nbFilter, 1
-	int selEnd=V_endPos
+	int selEnd = V_endPos
 		
-	if(strlen(s.keyText)==1) // a one-byte printing character
+	if(strlen(s.keyText) == 1) // a one-byte printing character
 		// insert character into current selection
 		Notebook BatchRenamerPanel#nbFilter text=s.keyText, textRGB=(0,0,0)
-		vLength+=1-abs(V_endPos-V_startPos)
+		vLength += 1 - abs(V_endPos - V_startPos)
 		// find out where we want to leave cursor
 		GetSelection Notebook, BatchRenamerPanel#nbFilter, 1
-		selEnd=V_endPos
+		selEnd = V_endPos
 	endif
 	
 	// select and format text
 	Notebook BatchRenamerPanel#nbFilter selection={startOfFile,endOfFile}, textRGB=(0,0,0)
 	// put text into global filter string
 	GetSelection Notebook, BatchRenamerPanel#nbFilter, 3
-	strFilter=s_selection
+	strFilter = s_selection
 	Notebook BatchRenamerPanel#nbFilter selection={(0,selEnd),(0,selEnd)}, findText={"",1}
 	
 	Button buttonClear, win=BatchRenamerPanel, disable=3*(vLength==0)
-	ClearText((vLength==0))
+	ClearText((vLength == 0))
 	
 	WS_UpdateWaveSelectorWidget("BatchRenamerPanel", "listboxSelector")
 	
 	return 1 // tell Igor we've handled all keyboard events
-end
-
-static function setDimLabels(strList, dim, w)
-	string strList
-	int dim
-	wave w
-	
-	int numLabels=ItemsInList(strList)
-	int i
-		
-	if(numLabels!=DimSize(w, dim))
-		return 0
-	endif
-	for(i=0;i<numLabels;i+=1)
-		SetDimLabel dim, i, $StringFromList(i, strList), w
-	endfor
-	return 1
 end
 
 // PNG: width= 90, height= 30
