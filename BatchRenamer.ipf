@@ -2,7 +2,7 @@
 #pragma rtGlobals=3
 #pragma DefaultTab={3,20,4}
 #pragma ModuleName=BatchRenamer
-#pragma version=1.5
+#pragma version=1.52
 
 #include <WaveSelectorWidget>
 #include <Resize Controls>
@@ -133,12 +133,15 @@ function BatchRename()
 	SetVariable setvarSuffix, win=BatchRenamerPanel, pos={380,10}, size={70,14}, title="Suffix:"
 	SetVariable setvarSuffix, win=BatchRenamerPanel, value=_STR:"_suf", Proc=BatchRenamer#SetVarFunc, focusRing=0
 	SetVariable setvarSuffix, win=BatchRenamerPanel, help={"Append this text to all item names"}
-	SetVariable setvarThis, win=BatchRenamerPanel, pos={270,30}, size={90,14}, title="Replace"
+	
+	SetVariable setvarThis, win=BatchRenamerPanel, pos={240,30}, size={90,14}, title="Replace"
 	SetVariable setvarThis, win=BatchRenamerPanel, value=_STR:"", Proc=BatchRenamer#SetVarFunc, focusRing=0
 	SetVariable setvarThis, win=BatchRenamerPanel, help={"Replace specified text in all item names"}
-	SetVariable setvarWith, win=BatchRenamerPanel, pos={365,30}, size={80,14}, title="with"
+	SetVariable setvarWith, win=BatchRenamerPanel, pos={332,30}, size={80,14}, title="with"
 	SetVariable setvarWith, win=BatchRenamerPanel, value=_STR:"", Proc=BatchRenamer#SetVarFunc, focusRing=0
 	SetVariable setvarWith, win=BatchRenamerPanel, help={"Replace specified text in all item names"}
+	CheckBox checkMaxReplace, win=BatchRenamerPanel,pos={415,28},size={15,15},title="1 time",value=0,mode=0, Proc=BatchRenamer#CheckFunc
+	CheckBox checkMaxReplace, win=BatchRenamerPanel, help={"Limits maximum number of replacements to 1 per item when checked"}
 	
 	ListBox listboxSelector, win=BatchRenamerPanel, pos={10,30}, size={160,200}, focusRing=0
 	MakeListIntoWaveSelector("BatchRenamerPanel", "listboxSelector", content=WMWS_Waves, nameFilterProc="BatchRenamer#filterFunc")
@@ -171,24 +174,27 @@ function BatchRename()
 	PopupMenu popupType,userdata(ResizeControlsInfo)= A"!!,A.!!#9W!!#?K!!#<Xz!!#](Aon\"Qzzzzzzzzzzzzzz!!#](Aon\"Qzz"
 	PopupMenu popupType,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:Du]k<zzzzzzzzzzz"
 	PopupMenu popupType,userdata(ResizeControlsInfo) += A"zzz!!#u:Du]k<zzzzzzzzzzzzzz!!!"
-	CheckBox checkPre,userdata(ResizeControlsInfo)= A"!!,H5!!#:b!!#<(!!#<8z!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
+	CheckBox checkPre,userdata(ResizeControlsInfo)= A"!!,H5!!#:b!!#<(!!#<8z!!#N3Bk1ct7Rpqgzzzzzzzzzzzzz!!#N3Bk1ct7Rpqgz"
 	CheckBox checkPre,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:Du]k<zzzzzzzzzzz"
 	CheckBox checkPre,userdata(ResizeControlsInfo) += A"zzz!!#u:Du]k<zzzzzzzzzzzzzz!!!"
-	CheckBox checkSuf,userdata(ResizeControlsInfo)= A"!!,Ho!!#:b!!#<(!!#<8z!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
+	CheckBox checkSuf,userdata(ResizeControlsInfo)= A"!!,Ho!!#:b!!#<(!!#<8z!!#N3Bk1ct7Rpqgzzzzzzzzzzzzz!!#N3Bk1ct7Rpqgz"
 	CheckBox checkSuf,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:Du]k<zzzzzzzzzzz"
 	CheckBox checkSuf,userdata(ResizeControlsInfo) += A"zzz!!#u:Du]k<zzzzzzzzzzzzzz!!!"
-	SetVariable setvarPrefix,userdata(ResizeControlsInfo)= A"!!,HB!!#;-!!#?E!!#;mz!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
+	SetVariable setvarPrefix,userdata(ResizeControlsInfo)= A"!!,HB!!#;-!!#?E!!#;mz!!#N3Bk1ct7Rpqgzzzzzzzzzzzzz!!#N3Bk1ct7Rpqgz"
 	SetVariable setvarPrefix,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:Du]k<zzzzzzzzzzz"
 	SetVariable setvarPrefix,userdata(ResizeControlsInfo) += A"zzz!!#u:Du]k<zzzzzzzzzzzzzz!!!"
-	SetVariable setvarSuffix,userdata(ResizeControlsInfo)= A"!!,I$!!#;-!!#?E!!#;mz!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
+	SetVariable setvarSuffix,userdata(ResizeControlsInfo)= A"!!,I$!!#;-!!#?E!!#;mz!!#N3Bk1ct7Rpqgzzzzzzzzzzzzz!!#N3Bk1ct7Rpqgz"
 	SetVariable setvarSuffix,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:Du]k<zzzzzzzzzzz"
 	SetVariable setvarSuffix,userdata(ResizeControlsInfo) += A"zzz!!#u:Du]k<zzzzzzzzzzzzzz!!!"
-	SetVariable setvarThis,userdata(ResizeControlsInfo)= A"!!,HB!!#=S!!#?m!!#;mz!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
+	SetVariable setvarThis,userdata(ResizeControlsInfo)= A"!!,H+!!#=S!!#?m!!#;mz!!#N3Bk1ct7Rpqgzzzzzzzzzzzzz!!#N3Bk1ct7Rpqgz"
 	SetVariable setvarThis,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:Du]k<zzzzzzzzzzz"
 	SetVariable setvarThis,userdata(ResizeControlsInfo) += A"zzz!!#u:Du]k<zzzzzzzzzzzzzz!!!"
-	SetVariable setvarWith,userdata(ResizeControlsInfo)= A"!!,HqJ,hn)!!#?Y!!#;mz!!#o2B4uAezzzzzzzzzzzzzz!!#o2B4uAezz"
+	SetVariable setvarWith,userdata(ResizeControlsInfo)= A"!!,Ha!!#=S!!#?Y!!#;mz!!#N3Bk1ct7Rpqgzzzzzzzzzzzzz!!#N3Bk1ct7Rpqgz"
 	SetVariable setvarWith,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:Du]k<zzzzzzzzzzz"
 	SetVariable setvarWith,userdata(ResizeControlsInfo) += A"zzz!!#u:Du]k<zzzzzzzzzzzzzz!!!"
+	CheckBox checkMaxReplace,userdata(ResizeControlsInfo)= A"!!,I5J,hmn!!#>:!!#<8z!!#N3Bk1ct7Rpqgzzzzzzzzzzzzz!!#N3Bk1ct7Rpqgz"
+	CheckBox checkMaxReplace,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:DuaTbBQO4Szzzzzzzzzz"
+	CheckBox checkMaxReplace,userdata(ResizeControlsInfo) += A"zzz!!#u:Du_\"OASGdjF8u:@zzzzzzzzzzzz!!!"
 	ListBox listboxSelector,userdata(ResizeControlsInfo)= A"!!,A.!!#=S!!#A/!!#AWz!!#](Aon\"Qzzzzzzzzzzzzzz!!#N3Bk1ct7Rpqgz"
 	ListBox listboxSelector,userdata(ResizeControlsInfo) += A"zzzzzzzzzzzz!!#u:Du]k<zzzzzzzzzzz"
 	ListBox listboxSelector,userdata(ResizeControlsInfo) += A"zzz!!#N3Bk1ct@r5aUzzzzzzzzzzzzz!!!"
@@ -314,10 +320,18 @@ static function SetVarFunc(STRUCT WMSetVariableAction &s)
 end
 
 static function PopMenuFunc(STRUCT WMPopupAction &pa)
-	if(pa.eventCode == 2)
-		MakeListIntoWaveSelector("BatchRenamerPanel", "listboxSelector", content=pa.popNum, nameFilterProc="BatchRenamer#filterFunc")
-		WS_UpdateWaveSelectorWidget("BatchRenamerPanel", "listboxSelector")
+	if(pa.eventCode != 2)
+		return 0
 	endif
+	strswitch(pa.ctrlName)
+		case "popupType":
+			MakeListIntoWaveSelector("BatchRenamerPanel", "listboxSelector", content=pa.popNum, nameFilterProc="BatchRenamer#filterFunc")
+			WS_UpdateWaveSelectorWidget("BatchRenamerPanel", "listboxSelector")
+			break
+		case "popupMaxReplace":
+			setNewNames()
+			break
+	endswitch
 	return 0
 end
 
@@ -433,7 +447,8 @@ static function setNewNames()
 		generateCmd()
 		return 0
 	endif	
-	string strPre="", strSuf="", strThis="", strWith=""	
+	string strPre="", strSuf="", strThis="", strWith=""
+	variable maxReplace=inf
 	ControlInfo /W=BatchRenamerPanel checkPre
 	if(V_Value)
 		ControlInfo /W=BatchRenamerPanel setvarPrefix
@@ -448,7 +463,10 @@ static function setNewNames()
 	strThis=s_value
 	ControlInfo /W=BatchRenamerPanel setvarWith
 	strWith=s_value	
-	NamesListWave[][2] = strPre + ReplaceString(strThis,NamesListWave[p][0],strWith) + strSuf
+	ControlInfo /W=BatchRenamerPanel checkMaxReplace
+	maxReplace = V_Value ? 1 : inf
+	
+	NamesListWave[][2] = strPre + ReplaceString(strThis,NamesListWave[p][0],strWith,0,maxReplace) + strSuf
 	generateCmd()
 end
 
@@ -622,7 +640,7 @@ static function FilterHook(STRUCT WMWinHookStruct &s)
 	endif
 	
 	if(s.eventcode == 6) // resize
-		GetWindow $s.WinName wsize
+		GetWindow BatchRenamerPanel wsize // $s.winName is unreliable in Igor8
 		Notebook BatchRenamerPanel#nbCmd margins={0,0,435+(V_right-V_left)-470}
 		Notebook BatchRenamerPanel#nbCmd selection={startOfFile,startOfFile}, findText={"",1}
 	endif
