@@ -2,12 +2,12 @@
 #pragma rtGlobals=3
 #pragma DefaultTab={3,20,4}
 #pragma ModuleName=BatchRenamer
-#pragma version=1.52
+#pragma version=1.53
 
 #include <WaveSelectorWidget>
 #include <Resize Controls>
 
-static constant kTesting = 1
+#define testing
 
 strconstant ksPackageName = BatchRenamer
 strconstant ksPrefsFileName = acwBatchRenamer.bin
@@ -15,6 +15,8 @@ constant kPrefsVersion = 100
 
 // to do
 // an option to hide the packages folder in the wave selector widget would be nice!
+// drag and drop? i keep trying to drag items!
+// proper help file?
 
 menu "Data"
 	submenu "Packages"
@@ -239,9 +241,9 @@ function BatchRename()
 	// resize to restore window size
 	MoveWindow /W=BatchRenamerPanel prefs.win.left,prefs.win.top,prefs.win.right,prefs.win.bottom
 	
-	if(!kTesting)
-		PauseForUser BatchRenamerPanel
-	endif
+	#ifndef testing	
+		PauseForUser BatchRenamerPanel	
+	#endif
 end
 
 static function ValidCell(STRUCT WMListboxAction &s)
@@ -423,6 +425,7 @@ static function selectItems()
 	wave /T wNew=ListToTextWave(WS_SelectedObjectsList("BatchRenamerPanel", "listboxSelector"),";")
 	int i
 	int numItems=numpnts(wNew)
+	sw[][0][0]=0
 	for(i=0;i<numItems;i++)
 		FindValue /TEXT=wNew[i]/TXOP=4 wPaths
 		if(V_value > -1)
@@ -435,8 +438,16 @@ static function selectItems()
 		else
 			NamesListWave[DimSize(NamesListWave,0)][]={{unquote(ParseFilePath(0, wNew[i], ":", 1, 0))},{strType},{""},{"\JC🅧"}}
 		endif
+		// select newly added items
+		sw[DimSize(sw,0)][][]={1} // sets first column, first chunk to 1, others to 0.
 	endfor
-	Redimension /N=(DimSize(wPaths, 0), -1, -1) sw
+	
+	// sort so that data folders are listed before their contents.
+	make /free/n=(dimsize(wPaths, 0))/T keywave1, keywave2
+	keywave1=selectstring(cmpstr(NamesListWave[p][1],"DataFolder")==0, ParseFilePath(1, wPaths[p], ":", 1, 0), wPaths[p])
+	keywave2=selectstring(cmpstr(NamesListWave[p][1],"DataFolder")==0,NamesListWave[p][2], "")
+	SortColumns /A keyWaves={keywave1, keywave2}, sortWaves={wPaths, NamesListWave, sw}
+	
 	setNewNames()
 end
 
@@ -599,6 +610,7 @@ static function help()
 	cmd += "Select the type of object to be renamed in the popup menu.;"
 	cmd += "Use the arrow button to transfer selected items to the list on the right side of the dialog.;"
 	cmd += "Edit the Prefix, Suffix and Replace Text fields to generate new object names.;"
+	cmd += "Check '1 time' to replace only the first instance in each item.;"
 	cmd += "Changed names are indicated by blue text for liberal names and green for non-liberal.;"
 	cmd += "Double-click to transfer a single item from the browser to the rename list.;"
 	cmd += "Press Delete or Backspace to remove selected rows from the rename list.;"
