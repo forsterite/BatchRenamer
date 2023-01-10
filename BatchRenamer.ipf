@@ -3,7 +3,7 @@
 #pragma DefaultTab={3,20,4}
 #pragma ModuleName=BatchRenamer
 #pragma IgorVersion=8
-#pragma version=1.99
+#pragma version=2.10
 
 #include <WaveSelectorWidget>
 #include <Resize Controls>
@@ -18,6 +18,8 @@ static strconstant ksShortTitle="Batch Renamer" // the project short title on Ig
 static strconstant ksPackageName = BatchRenamer
 static strconstant ksPrefsFileName = acwBatchRenamer.bin
 static constant kPrefsVersion = 105
+
+// 2.10 return 0 from filter hook function for kill event
 
 // to do:
 // proper help file!!
@@ -451,7 +453,7 @@ end
 	
 static function CheckFunc(STRUCT WMCheckboxAction &s)
 	
-	if(s.eventcode != 2)
+	if (s.eventcode != 2)
 		return 0
 	endif
 	
@@ -500,16 +502,16 @@ static function SetVarFunc(STRUCT WMSetVariableAction &s)
 	return 0
 end
 
-static function PopMenuFunc(STRUCT WMPopupAction &pa)
-	if (pa.eventCode != 2)
+static function PopMenuFunc(STRUCT WMPopupAction &s)	
+	if (s.eventCode != 2)
 		return 0
 	endif
-	if (CheckUpdated(pa.win, 0))
+	if (CheckUpdated(s.win, 0))
 		return 0
 	endif
-	strswitch(pa.ctrlName)
+	strswitch(s.ctrlName)
 		case "popupType":
-			MakeListIntoWaveSelector("BatchRenamerPanel", "listboxSelector", content=pa.popNum, nameFilterProc="BatchRenamer#filterFunc")
+			MakeListIntoWaveSelector("BatchRenamerPanel", "listboxSelector", content=s.popNum, nameFilterProc="BatchRenamer#filterFunc")
 			WS_UpdateWaveSelectorWidget("BatchRenamerPanel", "listboxSelector")
 			ResetListboxWaves()
 			ClearText(1)
@@ -528,6 +530,7 @@ static function WS_NotificationProc(string SelectedItem, variable EventCode)
 end
 
 static function ButtonFunc(STRUCT WMButtonAction &s)
+
 	if (s.eventCode != 2)
 		return 0
 	endif
@@ -907,10 +910,14 @@ static function FilterHook(STRUCT WMWinHookStruct &s)
 		return 0
 	endif
 	
+	if (s.eventcode == 17) // killvote
+		return 0
+	endif
+	
 	if (s.eventcode == 2) // window is being killed
-		KillDataFolder /Z root:Packages:BatchRenamer
 		SaveWindowPosition(s.WinName)
-		return 1
+		KillDataFolder /Z root:Packages:BatchRenamer
+		return 0
 	endif
 	
 	if (s.eventcode == 6) // resize
@@ -932,7 +939,7 @@ static function FilterHook(STRUCT WMWinHookStruct &s)
 	SVAR strFilter = dfr:strFilter
 	int vLength = strlen(strFilter)
 	
-	if(s.eventcode==3 && vLength==0) // mousedown
+	if (s.eventcode==3 && vLength==0) // mousedown
 		return 1 // don't allow mousedown when we have 'filter' displayed in nb
 	endif
 		
@@ -975,6 +982,8 @@ static function FilterHook(STRUCT WMWinHookStruct &s)
 	if (s.eventcode!=11)
 		return 0
 	endif
+	
+	// keyboard events only from here on
 	
 	if (vLength == 0) // Remove "Filter" text before starting to deal with keyboard activity
 		Notebook BatchRenamerPanel#nbFilter selection={startOfFile,endofFile}, text=""
